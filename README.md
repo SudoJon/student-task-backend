@@ -1,0 +1,1 @@
+**Backend API for the Student Task Manager project. Built with Node.js/Express, connected to AWS RDS MySQL, and deployed on EC2 inside a secure VPC. Uses API‑key authentication and a clean MVC structure.**
