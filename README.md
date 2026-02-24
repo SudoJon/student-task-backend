@@ -19,14 +19,12 @@
 
 
 student-task-backend/
-│
-├── Backend/
-│   ├── app.js
-│   ├── package.json
-│   ├── node_modules/
-│   └── .env   (not included in repo)
-│
-└── README.md
+ Backend/
+ app.js
+ package.json
+ node_modules/
+ .env   (not included in repo)
+ README.md
 
  **Local Setup**
 1. **Clone the repository**
