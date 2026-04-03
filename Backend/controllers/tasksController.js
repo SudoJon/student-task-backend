@@ -24,11 +24,19 @@ exports.getTasks = (req, res) => {
     });
 };
 
-// CREATE a task
+// CREATE a task (Flexible)
 exports.createTask = (req, res) => {
     console.log("POST /tasks");
 
-    const { title, description, completed, status, priority, due_date, notes } = req.body;
+    const { 
+        title, 
+        description = null, 
+        completed = 0, 
+        status = "todo", 
+        priority = "medium", 
+        due_date = null, 
+        notes = null 
+    } = req.body;
 
     if (!title) {
         return res.status(400).json({ error: "Title is required" });
@@ -42,12 +50,12 @@ exports.createTask = (req, res) => {
 
     const values = [
         title,
-        description || null,
-        completed ?? 0,
-        status || "todo",
-        priority || "medium",
-        due_date || null,
-        notes || null
+        description,
+        completed,
+        status,
+        priority,
+        due_date,
+        notes
     ];
 
     db.query(query, values, (err, result) => {
@@ -63,7 +71,7 @@ exports.createTask = (req, res) => {
     });
 };
 
-// UPDATE a task
+// UPDATE a task (Flexible)
 exports.updateTask = (req, res) => {
     console.log(`PUT /tasks/${req.params.id}`);
 
@@ -73,13 +81,13 @@ exports.updateTask = (req, res) => {
     const query = `
         UPDATE tasks 
         SET 
-            title = ?, 
-            description = ?, 
-            completed = ?, 
-            status = ?, 
-            priority = ?, 
-            due_date = ?, 
-            notes = ?
+            title = COALESCE(?, title),
+            description = COALESCE(?, description),
+            completed = COALESCE(?, completed),
+            status = COALESCE(?, status),
+            priority = COALESCE(?, priority),
+            due_date = COALESCE(?, due_date),
+            notes = COALESCE(?, notes)
         WHERE id = ?
     `;
 
