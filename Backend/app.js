@@ -1,3 +1,15 @@
+const fs = require('fs');
+const util = require('util');
+
+// Log to file
+const logFile = fs.createWriteStream('/home/ec2-user/node-app.log', { flags: 'a' });
+const logStdout = process.stdout;
+
+console.log = function (msg) {
+  logFile.write(new Date().toISOString() + " " + msg + '\n');
+  logStdout.write(msg + '\n');
+};
+
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -6,6 +18,14 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Student Tasks API</h1>
+    <p>This backend is running on EC2 and connected to RDS.</p>
+    <p>Try the API endpoint: <a href="/tasks">/tasks</a></p>
+  `);
+});
 
 // Database connection
 const db = mysql.createConnection({
