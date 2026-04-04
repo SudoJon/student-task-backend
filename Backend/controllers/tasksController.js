@@ -9,13 +9,73 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
-// GET all tasks
+// GET all tasks with robust filtering
 exports.getTasks = (req, res) => {
-    console.log("GET /tasks");
+    console.log("GET /tasks", req.query);
 
-    const query = "SELECT * FROM tasks ORDER BY id DESC";
+    const { status, priority, due, search, sort, order } = req.query;
 
-    db.query(query, (err, results) => {
+    let query = "SELECT * FROM tasks";
+    const conditions = [];
+    const values = [];
+
+    // Status filter
+    if (status) {
+        conditions.push("status = ?");
+        values.push(status);
+    }
+
+    // Priority filter
+    if (priority) {
+        conditions.push("priority = ?");
+        values.push(priority);
+    }
+
+    // Due date filter
+    if (due) {
+        if (due === "today") {
+            conditions.push("due_date = CURDATE()");
+        } else if (due === "tomorrow") {
+            conditions.push("due_date = CURDATE() + INTERVAL 1 DAY");
+        } else if (due === "this_week") {
+            conditions.push("due_date BETWEEN CURDATE() AND CURDATE() + INTERVAL 7 DAY");
+        } else if (due === "overdue") {
+            conditions.push("due_date < CURDATE()");
+        } else if (due === "none") {
+            conditions.push("due_date IS NULL");
+        }
+    }
+
+    // Search filter (title, description, notes)
+    if (search) {
+        conditions.push("(title LIKE ? OR description LIKE ? OR notes LIKE ?)");
+        const like = `%${search}%`;
+        values.push(like, like, like);
+    }
+
+    // Apply WHERE if needed
+    if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+    }
+
+    // Sorting
+    const allowedSort = ["due_date", "priority", "updated_at", "created_at", "title"];
+    const allowedOrder = ["asc", "desc"];
+
+    let sortColumn = "id";
+    let sortDirection = "DESC";
+
+    if (sort && allowedSort.includes(sort)) {
+        sortColumn = sort;
+    }
+
+    if (order && allowedOrder.includes(order.toLowerCase())) {
+        sortDirection = order.toUpperCase();
+    }
+
+    query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+
+    db.query(query, values, (err, results) => {
         if (err) {
             console.error("Error fetching tasks:", err);
             return res.status(500).json({ error: "Database error" });
