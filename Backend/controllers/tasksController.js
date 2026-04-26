@@ -9,15 +9,19 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
-// GET all tasks with robust filtering
+/* ============================================================
+   GET TASKS — now filtered by logged‑in user (req.user.id)
+   ============================================================ */
 exports.getTasks = (req, res) => {
     console.log("GET /tasks", req.query);
 
+    const userId = req.user.id; //  Cognito user ID
+
     const { status, priority, due, search, sort, order } = req.query;
 
-    let query = "SELECT * FROM tasks";
+    let query = "SELECT * FROM tasks WHERE cognito_user_id = ?";
     const conditions = [];
-    const values = [];
+    const values = [userId];
 
     // Status filter
     if (status) {
@@ -46,16 +50,16 @@ exports.getTasks = (req, res) => {
         }
     }
 
-    // Search filter (title, description, notes)
+    // Search filter
     if (search) {
         conditions.push("(title LIKE ? OR description LIKE ? OR notes LIKE ?)");
         const like = `%${search}%`;
         values.push(like, like, like);
     }
 
-    // Apply WHERE if needed
+    // Apply extra conditions
     if (conditions.length > 0) {
-        query += " WHERE " + conditions.join(" AND ");
+        query += " AND " + conditions.join(" AND ");
     }
 
     // Sorting
@@ -84,9 +88,13 @@ exports.getTasks = (req, res) => {
     });
 };
 
-// CREATE a task (Flexible)
+/* ============================================================
+   CREATE TASK — attaches cognito_user_id to every new task
+   ============================================================ */
 exports.createTask = (req, res) => {
     console.log("POST /tasks");
+
+    const userId = req.user.id; //  Cognito user ID
 
     const { 
         title, 
@@ -104,8 +112,8 @@ exports.createTask = (req, res) => {
 
     const query = `
         INSERT INTO tasks 
-        (title, description, completed, status, priority, due_date, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (title, description, completed, status, priority, due_date, notes, cognito_user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -115,7 +123,8 @@ exports.createTask = (req, res) => {
         status,
         priority,
         due_date,
-        notes
+        notes,
+        userId
     ];
 
     db.query(query, values, (err, result) => {
@@ -131,10 +140,13 @@ exports.createTask = (req, res) => {
     });
 };
 
-// UPDATE a task (Flexible)
+/* ============================================================
+   UPDATE TASK — only updates tasks owned by the user
+   ============================================================ */
 exports.updateTask = (req, res) => {
     console.log(`PUT /tasks/${req.params.id}`);
 
+    const userId = req.user.id; //  Cognito user ID
     const { id } = req.params;
     const { title, description, completed, status, priority, due_date, notes } = req.body;
 
@@ -148,7 +160,7 @@ exports.updateTask = (req, res) => {
             priority = COALESCE(?, priority),
             due_date = COALESCE(?, due_date),
             notes = COALESCE(?, notes)
-        WHERE id = ?
+        WHERE id = ? AND cognito_user_id = ?
     `;
 
     const values = [
@@ -159,7 +171,8 @@ exports.updateTask = (req, res) => {
         priority,
         due_date,
         notes,
-        id
+        id,
+        userId
     ];
 
     db.query(query, values, (err, result) => {
@@ -169,31 +182,34 @@ exports.updateTask = (req, res) => {
         }
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Task not found" });
+            return res.status(404).json({ message: "Task not found or not yours" });
         }
 
         res.json({ message: "Task updated successfully" });
     });
 };
 
-// DELETE a task
+/* ============================================================
+   DELETE TASK — only deletes tasks owned by the user
+   ============================================================ */
 exports.deleteTask = (req, res) => {
     console.log(`DELETE /tasks/${req.params.id}`);
 
+    const userId = req.user.id; //  Cognito user ID
     const { id } = req.params;
 
-    const query = "DELETE FROM tasks WHERE id = ?";
-    db.query(query, [id], (err, result) => {
+    const query = "DELETE FROM tasks WHERE id = ? AND cognito_user_id = ?";
+
+    db.query(query, [id, userId], (err, result) => {
         if (err) {
             console.error("Error deleting task:", err);
             return res.status(500).json({ error: "Database error" });
         }
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Task not found" });
+            return res.status(404).json({ message: "Task not found or not yours" });
         }
 
         res.json({ message: "Task deleted successfully" });
     });
 };
-
