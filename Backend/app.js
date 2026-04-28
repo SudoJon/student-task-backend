@@ -23,7 +23,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-
 app.get('/', (req, res) => {
   res.send(`
     <h1>Student Tasks API</h1>
@@ -51,6 +50,15 @@ db.connect((err) => {
 // Routes
 const taskRoutes = require('./routes/tasks');
 app.use('/tasks', taskRoutes);
+
+const notesRoutes = require('./routes/notes');
+app.use('/notes', notesRoutes);
+
+const calendarRoutes = require('./routes/calendar');
+app.use('/calendar', calendarRoutes);
+
+const settingsRoutes = require('./routes/settings');
+app.use('/settings', settingsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;

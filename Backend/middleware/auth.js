@@ -21,7 +21,7 @@ console.log("AUTH HEADER:", req.headers.authorization);
     }
 
     req.user = {
-      id: decoded.sub,
+      sub: decoded.sub,
       email: decoded.email,
     };
 

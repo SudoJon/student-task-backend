@@ -15,7 +15,7 @@ const db = mysql.createConnection({
 exports.getTasks = (req, res) => {
     console.log("GET /tasks", req.query);
 
-    const userId = req.user.id; //  Cognito user ID
+    const userId = req.user.sub; //  Cognito user ID
 
     const { status, priority, due, search, sort, order } = req.query;
 
@@ -94,7 +94,7 @@ exports.getTasks = (req, res) => {
 exports.createTask = (req, res) => {
     console.log("POST /tasks");
 
-    const userId = req.user.id; //  Cognito user ID
+    const userId = req.user.sub; //  Cognito user ID
 
     const { 
         title, 
@@ -146,7 +146,7 @@ exports.createTask = (req, res) => {
 exports.updateTask = (req, res) => {
     console.log(`PUT /tasks/${req.params.id}`);
 
-    const userId = req.user.id; //  Cognito user ID
+    const userId = req.user.sub; //  Cognito user ID
     const { id } = req.params;
     const { title, description, completed, status, priority, due_date, notes } = req.body;
 
@@ -195,7 +195,7 @@ exports.updateTask = (req, res) => {
 exports.deleteTask = (req, res) => {
     console.log(`DELETE /tasks/${req.params.id}`);
 
-    const userId = req.user.id; //  Cognito user ID
+    const userId = req.user.sub; //  Cognito user ID
     const { id } = req.params;
 
     const query = "DELETE FROM tasks WHERE id = ? AND cognito_user_id = ?";
